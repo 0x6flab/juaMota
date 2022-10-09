@@ -1,0 +1,107 @@
+version: '3'
+
+networks:
+  tech-expo:
+    driver: bridge
+
+services:
+  rabbitmq:
+    build: .
+    image: mqtt-rabbitmq
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+      - "1883:1883"
+    networks:
+      - tech-expo  
+
+  influxdb:
+    image: influxdb:1.7-alpine
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb
+      - ./influxdb/config/:/etc/influxdb/
+    ports:
+      - "8086:8086"
+      - "8082:8082"
+      - "8089:8089/udp"
+    environment:
+      - INFLUXDB_DB=db0
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
+      - INFLUXDB_ADMIN_ENABLED=true
+    networks:
+      - tech-expo  
+
+  telegraf:
+    image: telegraf:1.11-alpine
+    environment:
+      HOSTNAME: "telegraf-getting-started"
+    links:
+      - influxdb
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - rabbitmq
+      - influxdb
+    networks:
+      - tech-expo  
+
+  kapacitor:
+    image: kapacitor:1.5-alpine
+    volumes:
+      - ./kapacitor/data/:/var/lib/kapacitor
+      - ./kapacitor/config/:/etc/kapacitor/
+    links:
+      - influxdb
+    ports:
+      - "9092:9092"
+    networks:
+      - tech-expo  
+
+  chronograf:
+    image: chronograf:1.7-alpine
+    environment:
+      RESOURCES_PATH: "/usr/share/chronograf/resources"
+    volumes:
+      - ./chronograf/data/:/var/lib/chronograf/
+    links:
+      - influxdb
+      - kapacitor
+    ports:
+      - "8888:8888"
+    depends_on:
+      - kapacitor
+      - influxdb
+      - telegraf
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_USERNAME=${INFLUXDB_USERNAME}
+      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+    networks:
+      - tech-expo  
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./grafana/data/:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    links:
+    - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    env_file:
+    - 'env.grafana'
+    user: "0"
+    networks:
+      - tech-expo  

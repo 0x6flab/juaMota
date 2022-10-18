@@ -1,6 +1,6 @@
-#define WIFI_SSID "wifi_yako";
+#define WIFI_SSID "Nakuja";
 
-#define WIFI_PASSWORD "wifi_password_yako";
+#define WIFI_PASSWORD "ajukaN12345";
 
 #define MQTT_SERVER "vm.rodneyosodo.com"; 
 

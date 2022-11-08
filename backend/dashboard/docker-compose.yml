@@ -16,7 +16,7 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
-      - "1883:1883"
+      - "1885:1883"
     networks:
       - tech-expo  
 
@@ -26,7 +26,7 @@ services:
       - ./influxdb/data:/var/lib/influxdb
       - ./influxdb/config/:/etc/influxdb/
     ports:
-      - "8086:8086"
+      - "8087:8086"
       - "8082:8082"
       - "8089:8089/udp"
     environment:
@@ -66,8 +66,6 @@ services:
 
   chronograf:
     image: chronograf:1.7-alpine
-    environment:
-      RESOURCES_PATH: "/usr/share/chronograf/resources"
     volumes:
       - ./chronograf/data/:/var/lib/chronograf/
     links:
@@ -89,7 +87,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - '3000:3000'
+      - '3001:3000'
     volumes:
       - ./grafana/data/:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning
